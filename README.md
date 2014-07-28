@@ -1,5 +1,5 @@
-ddos-test
-=========
+ddos-tools
+==========
 
 kinds of tools to test ddos presure.
 

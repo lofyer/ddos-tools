@@ -1,0 +1,13 @@
+# 线程树
+thread 4
+# 攻击时间
+time 30
+# 端口测试超时
+test 3
+# 来源IP范围
+source 192-192.168-168.0-255.0-255
+# ttl范围
+ttl 1-244
+# 攻击目标
+localhost 80
+localhost 81

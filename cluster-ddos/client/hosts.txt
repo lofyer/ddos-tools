@@ -1,4 +1,0 @@
-#slave
-demo@localhost
-#master
-demo@localhost

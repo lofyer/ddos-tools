@@ -1,25 +1,4 @@
-#!/bin/bash
-if [ $UID != 0 ]
-then
-	echo -e "You need to be root.\n"
-	exit
-fi
-
-declare -a HOSTS=($(cat hosts.txt))
-cnt=${#HOSTS[@]}
-
-if [ $cnt != 4 ]
-then
-	echo -e "Please edit hosts.txt.\n"
-	exit
-fi
-
-echo ${HOSTS[1]} | ssh ${HOSTS[3]} 'cat >> ~/hosts.txt'
-ssh ${HOSTS[3]} 'addhost'
-
-apt-get install -y hping3 nmap
-useradd -M ddos
-echo -e "ddos\tALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+echo -e "ddos\tALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/ddos
 
 # hping3-client
 cat > hping3-client << EOF_CLIENT

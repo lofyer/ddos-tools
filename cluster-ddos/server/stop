@@ -1,5 +1,5 @@
 #!/bin/bash
-declare -a HOSTS=($(cat hosts.txt))
+declare -a HOSTS=($(cat /tmp/hosts.txt))
 cnt=${#HOSTS[@]}
 
 for ((i=0;i<cnt;i++)); do

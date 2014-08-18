@@ -1,4 +1,5 @@
 echo -e "ddos\tALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/ddos
+chmod 0440 /etc/sudoers.d/ddos
 
 # hping3-client
 cat > hping3-client << EOF_CLIENT

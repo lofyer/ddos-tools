@@ -31,6 +31,7 @@ class MyDaemon(Daemon):
 			ss.send('Welcome to server')
 			try:
 				rc = ss.recv(1024)
+				logger.info(rc)
 			except Exception, e:
 				logger.info(e)
 				continue

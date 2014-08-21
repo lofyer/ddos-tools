@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 import socket, os, subprocess, sys, time, logging
 from daemon import Daemon
 

@@ -1,0 +1,18 @@
+# 通信安全码
+password=pswd4ddos
+# 控制端机器
+control=demo@192.168.2.100
+# udp或则tcp攻击
+mode=udp
+# 线程数
+thread=4
+# 攻击时间
+time=10
+# 端口测试超时
+test=3
+# 来源IP范围
+source=192-192.168-168.0-255.0-255
+# ttl范围
+ttl=1-244
+# 攻击目标
+target=192.168.1.1 80

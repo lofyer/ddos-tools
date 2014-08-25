@@ -43,7 +43,7 @@ for line in f.read().split('\n'):
 #print conf
 
 # here were going to build cmd
-cmd = "hping3"
+cmd = "hping3-client"
 
 #a=subprocess.Popen("curl ifconfig.me",stdin=subprocess.PIPE, stdout=subprocess.PIPE,stderr=subprocess.PIPE,shell=True)
 
